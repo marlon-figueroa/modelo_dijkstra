@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modelo Dijkstra — Ruta más corta</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("modelo-dijkstra-theme");
+        var theme = saved === "light" || saved === "dark"
+          ? saved
+          : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.setAttribute("data-theme", theme);
+      } catch (error) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>Modelo de Dijkstra</h1>
+          <p>Encuentra la ruta más corta en un grafo ponderado</p>
+        </div>
+      </div>
+      <div class="topbar-end">
+        <div class="legend">
+          <span><i class="dot origin"></i>Origen</span>
+          <span><i class="dot dest"></i>Destino</span>
+          <span><i class="dot current"></i>Actual</span>
+          <span><i class="dot visited"></i>Visitado</span>
+          <span><i class="dot path"></i>Ruta mínima</span>
+        </div>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="true" aria-label="Cambiar a tema claro">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2 4.8 4.8M19.2 19.2l-1.4-1.4M6.2 17.8 4.8 19.2M19.2 4.8l-1.4 1.4"></path>
+          </svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"></path>
+          </svg>
+          <span class="theme-label">Oscuro</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="canvas-card">
+        <div class="toolbar">
+          <div class="modes" role="tablist" aria-label="Modo de edición">
+            <button type="button" class="mode active" data-mode="node" id="mode-node">Añadir nodo</button>
+            <button type="button" class="mode" data-mode="edge" id="mode-edge">Conectar</button>
+            <button type="button" class="mode" data-mode="move" id="mode-move">Mover</button>
+          </div>
+          <label class="field compact">
+            <span>Peso</span>
+            <input type="number" id="edge-weight" min="1" step="1" value="1" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="directed" />
+            <span>Dirigido</span>
+          </label>
+          <div class="toolbar-actions">
+            <button type="button" class="ghost" id="btn-example">Grafo ejemplo</button>
+            <button type="button" class="ghost danger" id="btn-clear">Limpiar</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap">
+          <svg id="graph" viewBox="0 0 920 560" role="img" aria-label="Grafo interactivo">
+            <defs>
+              <marker id="arrow" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+                <path d="M0,1.5 L12,6 L0,10.5 Z"></path>
+              </marker>
+              <marker id="arrow-active" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+                <path d="M0,1.5 L12,6 L0,10.5 Z"></path>
+              </marker>
+              <marker id="arrow-path" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+                <path d="M0,1.5 L12,6 L0,10.5 Z"></path>
+              </marker>
+              <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                <path class="grid-line" d="M 32 0 L 0 0 0 32" fill="none" stroke-width="1"></path>
+              </pattern>
+            </defs>
+            <rect class="grid" x="0" y="0" width="920" height="560" fill="url(#grid)"></rect>
+            <g id="edges"></g>
+            <g id="nodes"></g>
+          </svg>
+          <p class="hint" id="hint">Haz clic en el lienzo para crear un nodo. En modo Conectar, pulsa dos nodos para unirlos.</p>
+        </div>
+      </section>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>Ruta</h2>
+          <div class="row">
+            <label class="field">
+              <span>Origen</span>
+              <select id="select-origin"></select>
+            </label>
+            <label class="field">
+              <span>Destino</span>
+              <select id="select-dest"></select>
+            </label>
+          </div>
+          <div class="actions">
+            <button type="button" class="primary" id="btn-run">Calcular ruta</button>
+            <button type="button" class="secondary" id="btn-step">Paso a paso</button>
+            <button type="button" class="ghost" id="btn-reset">Reiniciar</button>
+          </div>
+          <label class="speed">
+            <span>Velocidad</span>
+            <input type="range" id="speed" min="200" max="1400" step="100" value="700" />
+          </label>
+        </section>
+
+        <section class="panel result-panel">
+          <h2>Resultado</h2>
+          <div id="result" class="result empty">Elige origen y destino, luego calcula la ruta más corta.</div>
+        </section>
+
+        <section class="panel">
+          <h2>Distancias</h2>
+          <div class="table-wrap">
+            <table id="dist-table">
+              <thead>
+                <tr>
+                  <th>Nodo</th>
+                  <th>Distancia</th>
+                  <th>Anterior</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel log-panel">
+          <h2>Pasos del algoritmo</h2>
+          <ol id="log" class="log"></ol>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <p>Autor: Marlon Ernesto Figueroa Fuentes</p>
+    </footer>
+  </div>
+
+  <div class="modal hidden" id="weight-modal" role="dialog" aria-modal="true" aria-labelledby="weight-title">
+    <div class="modal-card">
+      <h3 id="weight-title">Peso de la arista</h3>
+      <p id="weight-copy">Define el costo entre los nodos seleccionados.</p>
+      <input type="number" id="modal-weight" min="1" step="1" value="1" />
+      <div class="modal-actions">
+        <button type="button" class="ghost" id="modal-cancel">Cancelar</button>
+        <button type="button" class="primary" id="modal-ok">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
