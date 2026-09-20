@@ -2,6 +2,8 @@
 
 Aplicación web para construir un grafo ponderado y encontrar la ruta más corta con el algoritmo de Dijkstra. Permite editar nodos y aristas en un lienzo, ver el resultado y seguir la ejecución paso a paso.
 
+**Demo:** [https://marlon-figueroa.github.io/modelo_dijkstra/](https://marlon-figueroa.github.io/modelo_dijkstra/)
+
 Autor: **Marlon Ernesto Figueroa Fuentes**
 
 ## Características
@@ -95,3 +97,11 @@ Dijkstra calcula distancias mínimas desde un origen en un grafo con pesos no ne
 6. Reconstruye la ruta recorriendo los predecesores.
 
 La implementación está en `src/dijkstra.js` y emite un historial de pasos para la animación y la tabla de distancias.
+
+## GitHub Pages
+
+Cada push a `main` construye el proyecto con Vite y lo publica en GitHub Pages. La URL queda:
+
+[https://marlon-figueroa.github.io/modelo_dijkstra/](https://marlon-figueroa.github.io/modelo_dijkstra/)
+
+El flujo está en `.github/workflows/deploy-pages.yml`. También se puede lanzar a mano desde la pestaña **Actions**.
